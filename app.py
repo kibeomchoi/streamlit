@@ -1,16 +1,17 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>운석 피하기 게임</title>
+import streamlit as st
+import streamlit.components.v1 as components
 
+st.set_page_config(page_title="운석 피하기", layout="centered")
+
+components.html("""
+<!DOCTYPE html>
+<html>
+<head>
 <style>
 body{
     margin:0;
     overflow:hidden;
     background:black;
-    font-family:Arial,sans-serif;
 }
 
 canvas{
@@ -18,56 +19,20 @@ canvas{
     margin:auto;
     background:linear-gradient(to bottom,#000428,#004e92);
 }
-
-#score{
-    position:absolute;
-    top:10px;
-    left:10px;
-    color:white;
-    font-size:24px;
-    font-weight:bold;
-}
-
-#gameOver{
-    position:absolute;
-    top:50%;
-    left:50%;
-    transform:translate(-50%,-50%);
-    color:white;
-    text-align:center;
-    display:none;
-}
-
-button{
-    padding:10px 20px;
-    font-size:18px;
-    cursor:pointer;
-}
 </style>
 </head>
 
 <body>
 
-<div id="score">점수: 0</div>
-
-<div id="gameOver">
-    <h1>게임 오버</h1>
-    <p id="finalScore"></p>
-    <button onclick="restart()">다시하기</button>
-</div>
-
-<canvas id="game"></canvas>
+<canvas id="game" width="800" height="600"></canvas>
 
 <script>
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
-canvas.width = 800;
-canvas.height = 600;
-
 let player = {
-    x: canvas.width/2 - 25,
-    y: canvas.height - 70,
+    x: 375,
+    y: 530,
     width:50,
     height:50,
     speed:7
@@ -75,7 +40,6 @@ let player = {
 
 let meteors = [];
 let score = 0;
-let gameRunning = true;
 
 const keys = {};
 
@@ -89,18 +53,14 @@ document.addEventListener("keyup", e=>{
 
 function createMeteor(){
     meteors.push({
-        x: Math.random()*(canvas.width-30),
+        x: Math.random()*770,
         y:-30,
         size:20+Math.random()*30,
         speed:3+Math.random()*5
     });
 }
 
-setInterval(()=>{
-    if(gameRunning){
-        createMeteor();
-    }
-},500);
+setInterval(createMeteor,500);
 
 function update(){
 
@@ -112,7 +72,7 @@ function update(){
         player.x += player.speed;
     }
 
-    player.x = Math.max(0,Math.min(canvas.width-player.width,player.x));
+    player.x = Math.max(0,Math.min(750,player.x));
 
     for(let i=meteors.length-1;i>=0;i--){
 
@@ -124,30 +84,20 @@ function update(){
             meteors[i].y < player.y + player.height &&
             meteors[i].y + meteors[i].size > player.y
         ){
-            endGame();
+            alert("게임 오버! 점수: " + score);
+            location.reload();
         }
 
-        if(meteors[i].y > canvas.height){
+        if(meteors[i].y > 600){
             meteors.splice(i,1);
             score++;
-            document.getElementById("score").innerText =
-            "점수: " + score;
         }
     }
 }
 
 function draw(){
 
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-
-    for(let i=0;i<100;i++){
-        ctx.fillStyle="white";
-        ctx.fillRect(
-            (i*83)%canvas.width,
-            (i*57)%canvas.height,
-            2,2
-        );
-    }
+    ctx.clearRect(0,0,800,600);
 
     ctx.fillStyle="cyan";
     ctx.fillRect(
@@ -169,43 +119,21 @@ function draw(){
         ctx.fillStyle="orange";
         ctx.fill();
     });
+
+    ctx.fillStyle="white";
+    ctx.font="24px Arial";
+    ctx.fillText("점수: " + score,10,30);
 }
 
-function gameLoop(){
-
-    if(gameRunning){
-        update();
-    }
-
+function loop(){
+    update();
     draw();
-    requestAnimationFrame(gameLoop);
+    requestAnimationFrame(loop);
 }
 
-function endGame(){
-    gameRunning=false;
-
-    document.getElementById("gameOver").style.display="block";
-    document.getElementById("finalScore").innerText =
-    "최종 점수: " + score;
-}
-
-function restart(){
-
-    player.x = canvas.width/2 - 25;
-    meteors = [];
-    score = 0;
-
-    document.getElementById("score").innerText =
-    "점수: 0";
-
-    document.getElementById("gameOver").style.display =
-    "none";
-
-    gameRunning = true;
-}
-
-gameLoop();
+loop();
 </script>
 
 </body>
 </html>
+""", height=620)
