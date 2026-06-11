@@ -3,21 +3,27 @@ import streamlit.components.v1 as components
 
 st.set_page_config(page_title="운석 피하기", layout="centered")
 
+st.title("☄️ 운석 피하기")
+st.write("A = 왼쪽 이동 | D = 오른쪽 이동")
+
 components.html("""
 <!DOCTYPE html>
 <html>
 <head>
+<meta charset="UTF-8">
+
 <style>
 body{
     margin:0;
-    overflow:hidden;
     background:black;
+    overflow:hidden;
 }
 
 canvas{
     display:block;
     margin:auto;
     background:linear-gradient(to bottom,#000428,#004e92);
+    border:2px solid white;
 }
 </style>
 </head>
@@ -27,68 +33,117 @@ canvas{
 <canvas id="game" width="800" height="600"></canvas>
 
 <script>
+
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
 let player = {
-    x: 375,
-    y: 530,
+    x:375,
+    y:530,
     width:50,
     height:50,
-    speed:7
+    speed:8
 };
 
 let meteors = [];
 let score = 0;
+let gameOver = false;
 
 const keys = {};
 
-document.addEventListener("keydown", e=>{
-    keys[e.key]=true;
+window.focus();
+
+window.addEventListener("keydown", function(e){
+    if(e.key === "a" || e.key === "A"){
+        keys["left"] = true;
+    }
+
+    if(e.key === "d" || e.key === "D"){
+        keys["right"] = true;
+    }
 });
 
-document.addEventListener("keyup", e=>{
-    keys[e.key]=false;
+window.addEventListener("keyup", function(e){
+    if(e.key === "a" || e.key === "A"){
+        keys["left"] = false;
+    }
+
+    if(e.key === "d" || e.key === "D"){
+        keys["right"] = false;
+    }
 });
 
 function createMeteor(){
+
     meteors.push({
-        x: Math.random()*770,
-        y:-30,
-        size:20+Math.random()*30,
-        speed:3+Math.random()*5
+        x:Math.random()*760,
+        y:-40,
+        size:20 + Math.random()*40,
+        speed:3 + Math.random()*4
     });
 }
 
-setInterval(createMeteor,500);
+setInterval(function(){
+
+    if(!gameOver){
+        createMeteor();
+    }
+
+},500);
 
 function update(){
 
-    if(keys["ArrowLeft"]){
+    if(gameOver){
+        return;
+    }
+
+    if(keys["left"]){
         player.x -= player.speed;
     }
 
-    if(keys["ArrowRight"]){
+    if(keys["right"]){
         player.x += player.speed;
     }
 
-    player.x = Math.max(0,Math.min(750,player.x));
+    player.x = Math.max(
+        0,
+        Math.min(
+            canvas.width-player.width,
+            player.x
+        )
+    );
 
     for(let i=meteors.length-1;i>=0;i--){
 
-        meteors[i].y += meteors[i].speed;
+        let m = meteors[i];
+
+        m.y += m.speed;
 
         if(
-            meteors[i].x < player.x + player.width &&
-            meteors[i].x + meteors[i].size > player.x &&
-            meteors[i].y < player.y + player.height &&
-            meteors[i].y + meteors[i].size > player.y
+            m.x < player.x + player.width &&
+            m.x + m.size > player.x &&
+            m.y < player.y + player.height &&
+            m.y + m.size > player.y
         ){
-            alert("게임 오버! 점수: " + score);
-            location.reload();
+
+            gameOver = true;
+
+            setTimeout(function(){
+
+                alert(
+                    "게임 오버!\\n점수 : "
+                    + score
+                );
+
+                location.reload();
+
+            },100);
+
+            return;
         }
 
-        if(meteors[i].y > 600){
+        if(m.y > canvas.height){
+
             meteors.splice(i,1);
             score++;
         }
@@ -97,9 +152,15 @@ function update(){
 
 function draw(){
 
-    ctx.clearRect(0,0,800,600);
+    ctx.clearRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
 
-    ctx.fillStyle="cyan";
+    ctx.fillStyle = "cyan";
+
     ctx.fillRect(
         player.x,
         player.y,
@@ -107,31 +168,56 @@ function draw(){
         player.height
     );
 
-    meteors.forEach(m=>{
+    meteors.forEach(function(m){
+
         ctx.beginPath();
+
         ctx.arc(
-            m.x+m.size/2,
-            m.y+m.size/2,
+            m.x + m.size/2,
+            m.y + m.size/2,
             m.size/2,
             0,
             Math.PI*2
         );
-        ctx.fillStyle="orange";
+
+        ctx.fillStyle = "orange";
         ctx.fill();
     });
 
-    ctx.fillStyle="white";
-    ctx.font="24px Arial";
-    ctx.fillText("점수: " + score,10,30);
+    ctx.fillStyle = "white";
+    ctx.font = "24px Arial";
+
+    ctx.fillText(
+        "점수 : " + score,
+        10,
+        30
+    );
+
+    if(gameOver){
+
+        ctx.fillStyle = "red";
+        ctx.font = "48px Arial";
+
+        ctx.fillText(
+            "GAME OVER",
+            260,
+            250
+        );
+    }
 }
 
-function loop(){
+function gameLoop(){
+
     update();
     draw();
-    requestAnimationFrame(loop);
+
+    requestAnimationFrame(
+        gameLoop
+    );
 }
 
-loop();
+gameLoop();
+
 </script>
 
 </body>
